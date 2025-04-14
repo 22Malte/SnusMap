@@ -72,3 +72,19 @@ button:hover {
   box-shadow: 0 0 10px rgba(0,0,0,0.6);
   z-index: 999;
 }
+
+
+
+.switch-auth {
+  color: #00c853;
+  text-align: center;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+#auth-status {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 15px;
+}
