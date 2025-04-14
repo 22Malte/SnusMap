@@ -1,51 +1,131 @@
 
-let map = L.map('map').setView([51.1657, 10.4515], 6);
-let userPosition = null;
-let savedSpots = JSON.parse(localStorage.getItem("snusSpots")) || [];
+// === Firebase Setup ===
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap-Mitwirkende'
-}).addTo(map);
 
-window.onload = function () {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos => {
-      userPosition = {
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude
-      };
-      map.setView([userPosition.lat, userPosition.lng], 14);
-    }, err => {
-      alert("Standort konnte nicht abgerufen werden.");
-    });
-  } else {
-    alert("Geolocation wird von diesem Gerät nicht unterstützt.");
-  }
+const firebaseConfig = {
+  apiKey: "AIzaSyB66bXzJd-41gp87YMVmO7zSZabmwQVVFM",
+  authDomain: "snusmap-6245b.firebaseapp.com",
+  projectId: "snusmap-6245b",
+  storageBucket: "snusmap-6245b.firebasestorage.app",
+  messagingSenderId: "485549625203",
+  appId: "1:485549625203:web:efa5bde3074a76ad24bf06",
+  measurementId: "G-88KNW2SKGR"
 };
 
-function createSpot() {
-  if (!userPosition) {
-    alert("Standort ist noch nicht verfügbar.");
-    return;
+
+
+
+
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// === Globale Variablen ===
+let currentUser = null;
+let map, userCircle, canPlaceSpot = false, userLocation = null;
+
+// === Recovery Phrase Generator ===
+function generateRecoveryPhrase() {
+  const words = ["frog", "shadow", "orange", "hill", "dust", "echo", "grape", "rocket"];
+  let phrase = [];
+  for (let i = 0; i < 6; i++) {
+    phrase.push(words[Math.floor(Math.random() * words.length)]);
   }
-
-  const rating = prompt("Wie stark war der Snus-Moment? (1–5 Sterne)");
-  const desc = prompt("Was ist passiert? (Beschreibung)");
-
-  if (!rating || isNaN(rating) || rating < 1 || rating > 5) {
-    alert("Ungültige Bewertung.");
-    return;
-  }
-
-  const marker = L.marker([userPosition.lat, userPosition.lng]).addTo(map);
-  marker.bindPopup(`<strong>Bewertung:</strong> ${rating}/5<br><strong>Beschreibung:</strong> ${desc}`).openPopup();
-
-  const newSpot = { lat: userPosition.lat, lng: userPosition.lng, rating, desc };
-  savedSpots.push(newSpot);
-  localStorage.setItem("snusSpots", JSON.stringify(savedSpots));
+  return phrase.join("-");
 }
 
-savedSpots.forEach(spot => {
-  const marker = L.marker([spot.lat, spot.lng]).addTo(map);
-  marker.bindPopup(`<strong>Bewertung:</strong> ${spot.rating}/5<br><strong>Beschreibung:</strong> ${spot.desc}`);
-});
+// === Auth ===
+function register() {
+  const username = document.getElementById("reg-username").value.trim();
+  const anzeige = document.getElementById("reg-anzeige").value.trim();
+  const pw = document.getElementById("reg-password").value;
+  const pwConfirm = document.getElementById("reg-password-confirm").value;
+
+  if (!username || !anzeige || pw !== pwConfirm) {
+    alert("Fehler bei der Eingabe.");
+    return;
+  }
+
+  const recovery = generateRecoveryPhrase();
+  db.collection("users").doc(username).set({
+    anzeigeName: anzeige,
+    passwort: pw,
+    recoveryPhrase: recovery,
+    bio: "",
+    profilBild: ""
+  }).then(() => {
+    currentUser = username;
+    document.getElementById("recovery-display").innerText = "Recovery Phrase: " + recovery;
+    startMap();
+  });
+}
+
+function login() {
+  const username = document.getElementById("login-username").value.trim();
+  const pw = document.getElementById("login-password").value;
+
+  db.collection("users").doc(username).get().then(doc => {
+    if (!doc.exists || doc.data().passwort !== pw) {
+      alert("Login fehlgeschlagen.");
+      return;
+    }
+    currentUser = username;
+    startMap();
+  });
+}
+
+// === Map + Spot Logik ===
+function startMap() {
+  document.getElementById("auth-container").style.display = "none";
+  document.getElementById("map-ui").style.display = "block";
+
+  map = L.map('map').setView([51.1657, 10.4515], 6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    userLocation = [pos.coords.latitude, pos.coords.longitude];
+    map.setView(userLocation, 13);
+    userCircle = L.circle(userLocation, { radius: 40000 }).addTo(map);
+  });
+
+  loadSpots();
+}
+
+function enableSpotPlacement() {
+  canPlaceSpot = true;
+  map.once("click", e => {
+    if (!canPlaceSpot) return;
+    canPlaceSpot = false;
+
+    const distance = map.distance(userLocation, [e.latlng.lat, e.latlng.lng]);
+    if (distance > 40000) {
+      alert("Du bist außerhalb des erlaubten Radius.");
+      return;
+    }
+
+    const desc = prompt("Was ging da ab?");
+    const timestamp = new Date().toISOString();
+    db.collection("spots").add({
+      user: currentUser,
+      location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
+      description: desc,
+      createdAt: timestamp
+    }).then(() => loadSpots());
+  });
+}
+
+function loadSpots() {
+  db.collection("spots").get().then(snapshot => {
+    snapshot.forEach(doc => {
+      const spot = doc.data();
+      const latlng = [spot.location.latitude, spot.location.longitude];
+      db.collection("users").doc(spot.user).get().then(userDoc => {
+        const name = userDoc.exists ? userDoc.data().anzeigeName : "Unbekannt";
+        const popup = `<strong>${name}</strong><br>${spot.description}<br><small>${spot.createdAt}</small>`;
+        L.marker(latlng).addTo(map).bindPopup(popup);
+      });
+    });
+  });
+}
