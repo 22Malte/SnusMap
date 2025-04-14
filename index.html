@@ -15,23 +15,29 @@
 <body>
   <div id="auth-container">
     <h2>Willkommen bei SnusMap</h2>
-    <div id="auth-forms">
-      <div id="login-form">
-        <h3>Login</h3>
-        <input type="text" id="login-username" placeholder="Username">
-        <input type="password" id="login-password" placeholder="Passwort">
-        <button onclick="login()">Einloggen</button>
-      </div>
-      <div id="register-form">
-        <h3>Registrieren</h3>
-        <input type="text" id="reg-username" placeholder="Username (einmalig)">
-        <input type="text" id="reg-anzeige" placeholder="AnzeigeName">
-        <input type="password" id="reg-password" placeholder="Passwort">
-        <input type="password" id="reg-password-confirm" placeholder="Passwort bestätigen">
-        <button onclick="register()">Registrieren</button>
-        <p id="recovery-display"></p>
-      </div>
-    </div>
+   
+  <div id="auth-container">
+  <div id="login-form">
+    <h3>Login</h3>
+    <input type="text" id="login-username" placeholder="Username">
+    <input type="password" id="login-password" placeholder="Passwort">
+    <button onclick="login()">Einloggen</button>
+    <p class="switch-auth" onclick="showRegister()">Neu hier? Registrieren</p>
+  </div>
+
+  <div id="register-form" style="display:none;">
+    <h3>Registrieren</h3>
+    <input type="text" id="reg-username" placeholder="Username (einmalig)">
+    <input type="text" id="reg-anzeige" placeholder="AnzeigeName">
+    <input type="password" id="reg-password" placeholder="Passwort">
+    <input type="password" id="reg-password-confirm" placeholder="Passwort bestätigen">
+    <button onclick="register()">Registrieren</button>
+    <p id="recovery-display"></p>
+    <p class="switch-auth" onclick="showLogin()">Schon einen Account? Einloggen</p>
+  </div>
+
+  <p id="auth-status"></p>
+</div>
   </div>
 
   <div id="map-ui" style="display:none;">
