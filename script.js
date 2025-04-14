@@ -1,32 +1,14 @@
-
-// === Firebase Setup ===
-
-
-const firebaseConfig = {
-  apiKey: "AIzaSyB66bXzJd-41gp87YMVmO7zSZabmwQVVFM",
-  authDomain: "snusmap-6245b.firebaseapp.com",
-  projectId: "snusmap-6245b",
-  storageBucket: "snusmap-6245b.firebasestorage.app",
-  messagingSenderId: "485549625203",
-  appId: "1:485549625203:web:efa5bde3074a76ad24bf06",
-  measurementId: "G-88KNW2SKGR"
-};
-
-
-
-
-
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // === Globale Variablen ===
 let currentUser = null;
-let map, userCircle, canPlaceSpot = false, userLocation = null;
+let map, userCircle, userLocation = null;
+let canPlaceSpot = false;
 
 // === Recovery Phrase Generator ===
 function generateRecoveryPhrase() {
-  const words = ["frog", "shadow", "orange", "hill", "dust", "echo", "grape", "rocket"];
+  const words = ["shadow", "lemon", "river", "jungle", "echo", "sugar", "storm", "pine"];
   let phrase = [];
   for (let i = 0; i < 6; i++) {
     phrase.push(words[Math.floor(Math.random() * words.length)]);
@@ -34,7 +16,26 @@ function generateRecoveryPhrase() {
   return phrase.join("-");
 }
 
-// === Auth ===
+// === UI Switcher & Feedback ===
+function showRegister() {
+  document.getElementById("login-form").style.display = "none";
+  document.getElementById("register-form").style.display = "block";
+  setStatus("");
+}
+
+function showLogin() {
+  document.getElementById("login-form").style.display = "block";
+  document.getElementById("register-form").style.display = "none";
+  setStatus("");
+}
+
+function setStatus(message, success = false) {
+  const status = document.getElementById("auth-status");
+  status.innerText = message;
+  status.style.color = success ? "lightgreen" : "red";
+}
+
+// === Registrierung ===
 function register() {
   const username = document.getElementById("reg-username").value.trim();
   const anzeige = document.getElementById("reg-anzeige").value.trim();
@@ -42,39 +43,44 @@ function register() {
   const pwConfirm = document.getElementById("reg-password-confirm").value;
 
   if (!username || !anzeige || pw !== pwConfirm) {
-    alert("Fehler bei der Eingabe.");
-    return;
+    return setStatus("Fehlerhafte Eingabe.");
   }
 
   const recovery = generateRecoveryPhrase();
-  db.collection("users").doc(username).set({
-    anzeigeName: anzeige,
-    passwort: pw,
-    recoveryPhrase: recovery,
-    bio: "",
-    profilBild: ""
-  }).then(() => {
-    currentUser = username;
-    document.getElementById("recovery-display").innerText = "Recovery Phrase: " + recovery;
-    startMap();
+  db.collection("users").doc(username).get().then(doc => {
+    if (doc.exists) return setStatus("Username ist bereits vergeben.");
+
+    db.collection("users").doc(username).set({
+      anzeigeName: anzeige,
+      passwort: pw,
+      recoveryPhrase: recovery,
+      bio: "",
+      profilBild: ""
+    }).then(() => {
+      currentUser = username;
+      document.getElementById("recovery-display").innerText = "Recovery Phrase: " + recovery;
+      setStatus("Registrierung erfolgreich!", true);
+      startMap();
+    }).catch(err => setStatus("Fehler beim Speichern."));
   });
 }
 
+// === Login ===
 function login() {
   const username = document.getElementById("login-username").value.trim();
   const pw = document.getElementById("login-password").value;
 
   db.collection("users").doc(username).get().then(doc => {
     if (!doc.exists || doc.data().passwort !== pw) {
-      alert("Login fehlgeschlagen.");
-      return;
+      return setStatus("Login fehlgeschlagen.");
     }
     currentUser = username;
+    setStatus("Login erfolgreich!", true);
     startMap();
-  });
+  }).catch(() => setStatus("Verbindung fehlgeschlagen."));
 }
 
-// === Map + Spot Logik ===
+// === MAP ===
 function startMap() {
   document.getElementById("auth-container").style.display = "none";
   document.getElementById("map-ui").style.display = "block";
@@ -87,7 +93,9 @@ function startMap() {
   navigator.geolocation.getCurrentPosition(pos => {
     userLocation = [pos.coords.latitude, pos.coords.longitude];
     map.setView(userLocation, 13);
-    userCircle = L.circle(userLocation, { radius: 40000 }).addTo(map);
+    userCircle = L.circle(userLocation, { radius: 40000, color: "lime", fillOpacity: 0.2 }).addTo(map);
+  }, () => {
+    alert("Standort konnte nicht abgerufen werden.");
   });
 
   loadSpots();
@@ -101,20 +109,24 @@ function enableSpotPlacement() {
 
     const distance = map.distance(userLocation, [e.latlng.lat, e.latlng.lng]);
     if (distance > 40000) {
-      alert("Du bist außerhalb des erlaubten Radius.");
+      alert("Dieser Punkt liegt außerhalb des 40 km Radius.");
       return;
     }
 
     const desc = prompt("Was ging da ab?");
     const timestamp = new Date().toISOString();
+
     db.collection("spots").add({
       user: currentUser,
       location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
       description: desc,
       createdAt: timestamp
-    }).then(() => loadSpots());
+    }).then(() => {
+      loadSpots();
+    });
   });
 }
+
 
 function loadSpots() {
   db.collection("spots").get().then(snapshot => {
