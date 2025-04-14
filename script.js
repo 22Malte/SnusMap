@@ -1,3 +1,15 @@
+// === Firebase Setup ===
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB66bXzJd-41gp87YMVmO7zSZabmwQVVFM",
+  authDomain: "snusmap-6245b.firebaseapp.com",
+  projectId: "snusmap-6245b",
+  storageBucket: "snusmap-6245b.firebasestorage.app",
+  messagingSenderId: "485549625203",
+  appId: "1:485549625203:web:efa5bde3074a76ad24bf06",
+  measurementId: "G-88KNW2SKGR"
+};
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
@@ -37,7 +49,7 @@ function setStatus(message, success = false) {
 
 // === Registrierung ===
 function register() {
-  const username = document.getElementById("reg-username").value.trim();
+  const username = document.getElementById("reg-username").value.trim().toLowerCase();
   const anzeige = document.getElementById("reg-anzeige").value.trim();
   const pw = document.getElementById("reg-password").value;
   const pwConfirm = document.getElementById("reg-password-confirm").value;
@@ -67,7 +79,7 @@ function register() {
 
 // === Login ===
 function login() {
-  const username = document.getElementById("login-username").value.trim();
+  const username = document.getElementById("login-username").value.trim().toLowerCase();
   const pw = document.getElementById("login-password").value;
 
   db.collection("users").doc(username).get().then(doc => {
@@ -96,6 +108,8 @@ function startMap() {
     userCircle = L.circle(userLocation, { radius: 40000, color: "lime", fillOpacity: 0.2 }).addTo(map);
   }, () => {
     alert("Standort konnte nicht abgerufen werden.");
+    userLocation = [51.1657, 10.4515]; // Deutschland-Mitte Fallback
+    map.setView(userLocation, 6);
   });
 
   loadSpots();
@@ -114,6 +128,11 @@ function enableSpotPlacement() {
     }
 
     const desc = prompt("Was ging da ab?");
+    if (!desc || desc.trim() === "") {
+      alert("Beschreibung ist erforderlich.");
+      return;
+    }
+
     const timestamp = new Date().toISOString();
 
     db.collection("spots").add({
@@ -126,7 +145,6 @@ function enableSpotPlacement() {
     });
   });
 }
-
 
 function loadSpots() {
   db.collection("spots").get().then(snapshot => {
