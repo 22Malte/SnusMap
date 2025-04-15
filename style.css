@@ -92,17 +92,17 @@ li {
 /* === Spot Button === */
 #addSpotBtn {
   position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 20px;
+  right: 20px;
   background-color: #00e676;
   color: black;
-  padding: 16px 22px;
-  font-size: 24px;
-  border-radius: 50%;
-  border: 3px solid #fff;
-  box-shadow: 0 0 10px rgba(0,0,0,0.4);
-  z-index: 10;
+  padding: 16px 20px;
+  font-size: 20px;
+  border-radius: 50px;
+  border: none;
+  font-weight: bold;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  z-index: 999;
 }
 
 /* === Bottom Navigation === */
