@@ -175,6 +175,7 @@ function updateStarDisplay() {
   const stars = document.querySelectorAll("#ratingStars span");
   stars.forEach((star, index) => {
     star.innerText = index < selectedRating ? "★" : "☆";
+    star.classList.toggle("active", index < selectedRating);
   });
 }
 
