@@ -12,6 +12,19 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// === Emoji Auto-Wechsel ===
+function isiOS() {
+  return /iPad|iPhone|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+}
+
+function applyEmojiMode() {
+  if (!isiOS()) {
+    document.body.classList.add("android-emoji");
+  }
+}
+
+applyEmojiMode();
+
 let currentUser = null;
 let map, userCircle, userLocation = null;
 let canPlaceSpot = false;
