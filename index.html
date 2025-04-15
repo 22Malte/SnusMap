@@ -3,35 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SnusMap v0.0.0.4</title>
+  <title>SnusMap v0.0.0.6</title>
   <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#000000">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <link rel="icon" href="icon.png">
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="icon" href="icon.png" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
 
-  <!-- === Auth-Container === -->
+  <!-- === Auth-Bereich === -->
   <div id="auth-container">
     <h2>Willkommen bei SnusMap</h2>
 
     <div id="login-form">
       <h3>Login</h3>
-      <input type="text" id="login-username" placeholder="Username">
-      <input type="password" id="login-password" placeholder="Passwort">
+      <input type="text" id="login-username" placeholder="Username" />
+      <input type="password" id="login-password" placeholder="Passwort" />
       <button onclick="login()">Einloggen</button>
       <p class="switch-auth" onclick="showRegister()">Neu hier? Registrieren</p>
     </div>
 
     <div id="register-form" style="display:none;">
       <h3>Registrieren</h3>
-      <input type="text" id="reg-username" placeholder="Username (einmalig)">
-      <input type="text" id="reg-anzeige" placeholder="AnzeigeName">
-      <input type="password" id="reg-password" placeholder="Passwort">
-      <input type="password" id="reg-password-confirm" placeholder="Passwort bestätigen">
+      <input type="text" id="reg-username" placeholder="Username (einmalig)" />
+      <input type="text" id="reg-anzeige" placeholder="AnzeigeName" />
+      <input type="password" id="reg-password" placeholder="Passwort" />
+      <input type="password" id="reg-password-confirm" placeholder="Passwort bestätigen" />
       <button onclick="register()">Registrieren</button>
       <p id="recovery-display"></p>
       <p class="switch-auth" onclick="showLogin()">Schon einen Account? Einloggen</p>
@@ -40,19 +38,43 @@
     <p id="auth-status"></p>
   </div>
 
-  <!-- === Map UI === -->
-  <div id="map-ui" style="display:none;">
-    <h1>SnusMap</h1>
-    <div id="map"></div>
-    <button id="addSpotBtn" onclick="enableSpotPlacement()">Spot setzen</button>
-	  <button id="logoutBtn" onclick="logout()">Logout</button>
+  <!-- === Main App-Bereich === -->
+  <div id="app-ui" style="display: none;">
+    <!-- Tab: MAP -->
+    <div class="tab" id="tab-map">
+      <div id="map"></div>
+      <button id="addSpotBtn" onclick="enableSpotPlacement()">➕</button>
+    </div>
+
+    <!-- Tab: SETTINGS -->
+    <div class="tab" id="tab-settings" style="display: none;">
+      <h2>⚙️ Einstellungen</h2>
+      <ul>
+        <li>🌙 Darkmode ✅ (soon)</li>
+        <li>🔄 Map neu laden</li>
+        <li>💬 <a href="https://discord.gg/" target="_blank">Discord</a></li>
+        <li style="color:red;" onclick="logout()">🚪 Logout</li>
+      </ul>
+    </div>
+
+    <!-- Tab: PROFIL -->
+    <div class="tab" id="tab-profile" style="display: none;">
+      <h2>👤 Profil</h2>
+      <div id="profile-info"></div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+      <button onclick="switchTab('tab-profile')">👤</button>
+      <button onclick="switchTab('tab-map')">🗺️</button>
+      <button onclick="switchTab('tab-settings')">⚙️</button>
+    </div>
   </div>
 
-  <!-- === Scripts === -->
+  <!-- Scripts -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-	<!-- Richtige version  -->
-	<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-	<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
