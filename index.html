@@ -103,11 +103,11 @@
 	</div>
     
     
-    <!-- Spot-Erstellen-Popup -->
+<!-- Spot-Erstellen-Popup -->
 <div id="spotPopup" style="display: none;">
   <div id="spotPopupContent">
-    <h2>Neuer Spot</h2>
-    
+    <h2 style="margin-bottom: 10px;">Neuer Spot</h2>
+
     <label>Rating</label>
     <div id="ratingStars">
       <span onclick="setRating(1)">☆</span>
@@ -118,9 +118,9 @@
     </div>
 
     <label for="spotDesc">Was lief hier</label>
-    <textarea id="spotDesc" rows="2" placeholder="..."></textarea>
+    <textarea id="spotDesc" rows="2" placeholder="Gib hier deine Beschreibung ein..."></textarea>
 
-    <label for="spotPhoto">Foto</label>
+    <label for="spotPhotoInput">Foto</label>
     <div id="spotPhotoBox" onclick="document.getElementById('spotPhotoInput').click()">+</div>
     <input type="file" id="spotPhotoInput" accept="image/*" style="display: none;" />
 
