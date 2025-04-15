@@ -92,7 +92,7 @@ li {
 /* === Spot Button === */
 #addSpotBtn {
   position: fixed;
-  bottom: 20px;
+  bottom: 90px;
   right: 20px;
   background-color: #00e676;
   color: black;
@@ -104,6 +104,10 @@ li {
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   z-index: 999;
 }
+.leaflet-control-attribution {
+  display: none !important;
+}
+
 
 /* === Bottom Navigation === */
 .bottom-nav {
@@ -149,6 +153,8 @@ li {
   border-bottom: 1px solid #333;
   cursor: pointer;
 }
+
+
 
 /* Optional: Emoji-Styling für Android */
 .android-emoji button,
