@@ -129,3 +129,11 @@ li {
 .bottom-nav button:hover {
   background: #333;
 }
+
+
+/* Optional: Emoji-Styling für Android */
+.android-emoji button,
+.android-emoji .bottom-nav button,
+.android-emoji li {
+  font-family: "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
