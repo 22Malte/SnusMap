@@ -109,11 +109,15 @@ li {
 .bottom-nav {
   position: fixed;
   bottom: 0;
-  width: 100%;
+  left: 0;
+  width: 100vw;
+  height: 60px;
   background: #222;
   display: flex;
   justify-content: space-around;
+  align-items: center;
   border-top: 1px solid #333;
+  z-index: 999;
 }
 
 .bottom-nav button {
@@ -124,6 +128,7 @@ li {
   padding: 12px 0;
   color: #fff;
   cursor: pointer;
+  height: 100%;
 }
 
 .bottom-nav button:hover {
