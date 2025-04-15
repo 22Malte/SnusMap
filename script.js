@@ -183,7 +183,14 @@ function deleteSpot(id) {
   if (!confirm("Diesen Spot wirklich löschen?")) return;
   db.collection("spots").doc(id).delete().then(() => {
     loadSpots();
-  });
+  });      
+}
 
-       
+
+function logout() {
+  if (!confirm("Willst du dich wirklich ausloggen?")) return;
+
+  localStorage.removeItem("snus_user");
+  currentUser = null;
+  location.reload(); // Seite neuladen, zurück zum Login
 }
