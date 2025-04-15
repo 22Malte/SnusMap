@@ -179,9 +179,13 @@ function updateStarDisplay() {
   });
 }
 
-document.getElementById("spotPhotoInput").addEventListener("change", (e) => {
-  selectedImageFile = e.target.files[0];
-  document.getElementById("spotPhotoBox").innerText = selectedImageFile ? "✓" : "+";
+// === File Input Binding ===
+window.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("spotPhotoInput");
+  input.addEventListener("change", (e) => {
+    selectedImageFile = e.target.files[0];
+    document.getElementById("spotPhotoBox").innerText = selectedImageFile ? "✓" : "+";
+  });
 });
 
 
