@@ -9,14 +9,18 @@ const firebaseConfig = {
   appId: "1:485549625203:web:efa5bde3074a76ad24bf06",
   measurementId: "G-88KNW2SKGR"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// === Globale Variablen ===
 let currentUser = null;
 let map, userCircle, userLocation = null;
 let canPlaceSpot = false;
+
+// === Tabs ===
+function switchTab(tabId) {
+  document.querySelectorAll(".tab").forEach(tab => tab.style.display = "none");
+  document.getElementById(tabId).style.display = "block";
+}
 
 // === Session Restore ===
 window.onload = () => {
@@ -27,6 +31,7 @@ window.onload = () => {
   }
 };
 
+// === Recovery Phrase Generator ===
 function generateRecoveryPhrase() {
   const words = ["shadow", "lemon", "river", "jungle", "echo", "sugar", "storm", "pine"];
   let phrase = [];
@@ -36,6 +41,7 @@ function generateRecoveryPhrase() {
   return phrase.join("-");
 }
 
+// === Auth UI Handling ===
 function showRegister() {
   document.getElementById("login-form").style.display = "none";
   document.getElementById("register-form").style.display = "block";
@@ -54,6 +60,7 @@ function setStatus(message, success = false) {
   status.style.color = success ? "lightgreen" : "red";
 }
 
+// === Registrierung ===
 function register() {
   const username = document.getElementById("reg-username").value.trim().toLowerCase();
   const anzeige = document.getElementById("reg-anzeige").value.trim();
@@ -84,6 +91,7 @@ function register() {
   });
 }
 
+// === Login ===
 function login() {
   const username = document.getElementById("login-username").value.trim().toLowerCase();
   const pw = document.getElementById("login-password").value;
@@ -99,9 +107,19 @@ function login() {
   }).catch(() => setStatus("Verbindung fehlgeschlagen."));
 }
 
+// === Logout ===
+function logout() {
+  if (!confirm("Willst du dich wirklich ausloggen?")) return;
+  localStorage.removeItem("snus_user");
+  currentUser = null;
+  location.reload();
+}
+
+// === MAP ===
 function startMap() {
   document.getElementById("auth-container").style.display = "none";
-  document.getElementById("map-ui").style.display = "block";
+  document.getElementById("app-ui").style.display = "block";
+  switchTab("tab-map");
 
   map = L.map('map').setView([51.1657, 10.4515], 6);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -119,6 +137,7 @@ function startMap() {
   });
 
   loadSpots();
+  loadProfile();
 }
 
 function enableSpotPlacement() {
@@ -183,14 +202,20 @@ function deleteSpot(id) {
   if (!confirm("Diesen Spot wirklich löschen?")) return;
   db.collection("spots").doc(id).delete().then(() => {
     loadSpots();
-  });      
+  });
 }
 
-
-function logout() {
-  if (!confirm("Willst du dich wirklich ausloggen?")) return;
-
-  localStorage.removeItem("snus_user");
-  currentUser = null;
-  location.reload(); // Seite neuladen, zurück zum Login
+// === Profil-Info laden ===
+function loadProfile() {
+  db.collection("users").doc(currentUser).get().then(doc => {
+    if (!doc.exists) return;
+    const data = doc.data();
+    document.getElementById("profile-info").innerHTML = `
+      <div style="text-align:center;">
+        <div style="font-size: 48px;">🧑</div>
+        <strong>${data.anzeigeName}</strong><br>
+        <small>@${currentUser}</small>
+      </div>
+    `;
+  });
 }
