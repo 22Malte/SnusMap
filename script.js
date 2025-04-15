@@ -136,7 +136,9 @@ let selectedRating = 0;
 let selectedImageFile = null;
 
 function enableSpotPlacement() {
+  alert("Tippe auf die Karte, um deinen Spot zu platzieren.");
   canPlaceSpot = true;
+
   map.once("click", (e) => {
     if (!canPlaceSpot) return;
     canPlaceSpot = false;
@@ -144,13 +146,23 @@ function enableSpotPlacement() {
     const distance = map.distance(userLocation, [e.latlng.lat, e.latlng.lng]);
     if (distance > 4000) return alert("Dieser Punkt liegt außerhalb des 4 km Radius.");
 
+    // Temporäre rote Pin-Nadel
+    L.marker(e.latlng, { icon: L.icon({
+      iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32]
+    })}).addTo(map);
+
     pendingSpotCoords = e.latlng;
     selectedRating = 0;
     selectedImageFile = null;
     document.getElementById("spotDesc").value = "";
     updateStarDisplay();
     document.getElementById("spotPhotoBox").innerText = "+";
-    document.getElementById("spotPopup").style.display = "flex";
+
+    const popup = document.getElementById("spotPopup");
+    popup.style.display = "flex";
+    setTimeout(() => popup.classList.add("visible"), 10);
   });
 }
 
