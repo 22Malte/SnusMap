@@ -186,10 +186,18 @@ li {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.6);
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#spotPopup.visible {
+  opacity: 1;
+  transform: scale(1);
 }
 
 #spotPopupContent {
@@ -197,10 +205,11 @@ li {
   padding: 20px;
   border-radius: 20px;
   width: 80%;
-  max-width: 320px;
+  max-width: 340px;
   box-shadow: 0 0 20px rgba(0,0,0,0.4);
   text-align: center;
   font-weight: bold;
+  color: black;
 }
 
 #spotPopupContent h2 {
@@ -213,12 +222,28 @@ li {
   margin-top: 14px;
   font-size: 15px;
   text-align: left;
+  color: black;
+}
+
+#ratingStars {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 5px;
 }
 
 #ratingStars span {
-  font-size: 32px;
-  color: gold;
+  font-size: 34px;
   cursor: pointer;
+  color: #ccc;
+  transition: transform 0.1s ease;
+}
+#ratingStars span:hover {
+  transform: scale(1.2);
+  color: gold;
+}
+#ratingStars span.active {
+  color: gold;
 }
 
 #spotDesc {
@@ -229,6 +254,7 @@ li {
   border: 1px solid #ccc;
   resize: none;
   font-size: 14px;
+  color: black;
 }
 
 #spotPhotoBox {
