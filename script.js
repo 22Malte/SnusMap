@@ -223,12 +223,63 @@ function loadProfile() {
   db.collection("users").doc(currentUser).get().then(doc => {
     if (!doc.exists) return;
     const data = doc.data();
-    document.getElementById("profile-info").innerHTML = `
-      <div style="text-align:center;">
-        <div style="font-size: 48px;">🧑</div>
-        <strong>${data.anzeigeName}</strong><br>
-        <small>@${currentUser}</small>
-      </div>
-    `;
+    document.getElementById("profil-icon").innerText = data.profilBild || "👤";
+    document.getElementById("profil-anzeige").innerText = data.anzeigeName;
+    document.getElementById("profil-username").innerText = "@" + currentUser;
+  });
+}
+
+function editDisplayName() {
+  const neuerName = prompt("Neuer Displayname:");
+  if (!neuerName) return;
+  db.collection("users").doc(currentUser).update({
+    anzeigeName: neuerName
+  }).then(() => {
+    loadProfile();
+    alert("Name aktualisiert.");
+  });
+}
+
+function editProfilBild() {
+  const emoji = prompt("Gib ein Emoji für dein Profilbild ein:");
+  if (!emoji) return;
+  db.collection("users").doc(currentUser).update({
+    profilBild: emoji
+  }).then(() => {
+    loadProfile();
+    alert("Profilbild aktualisiert.");
+  });
+}
+
+function resetPasswort() {
+  const neuesPW = prompt("Neues Passwort:");
+  if (!neuesPW) return;
+  db.collection("users").doc(currentUser).update({
+    passwort: neuesPW
+  }).then(() => alert("Passwort geändert."));
+}
+
+function resetRecovery() {
+  const neuePhrase = generateRecoveryPhrase();
+  db.collection("users").doc(currentUser).update({
+    recoveryPhrase: neuePhrase
+  }).then(() => alert("Neue Recovery Phrase:\n" + neuePhrase));
+}
+
+function deleteAccount() {
+  if (!confirm("Willst du wirklich deinen Account löschen?")) return;
+
+  // 1. Nutzer löschen
+  db.collection("users").doc(currentUser).delete().then(() => {
+    // 2. Spots löschen
+    db.collection("spots").where("user", "==", currentUser).get().then(snapshot => {
+      const batch = db.batch();
+      snapshot.forEach(doc => batch.delete(doc.ref));
+      batch.commit().then(() => {
+        localStorage.removeItem("snus_user");
+        alert("Account + Spots gelöscht.");
+        location.reload();
+      });
+    });
   });
 }
