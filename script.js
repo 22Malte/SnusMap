@@ -11,7 +11,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const storage = firebase.storage();
+const IMGUR_CLIENT_ID = "c590f6e5dc85f51"
 
 // === Emoji Auto-Wechsel ===
 function isiOS() {
@@ -176,6 +176,7 @@ function enableSpotPlacement() {
     const stars = Math.min(5, Math.max(1, parseInt(rating) || 0));
     const timestamp = new Date().toISOString();
 
+    // Bildauswahl via Input
     const fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.accept = "image/*";
@@ -186,25 +187,35 @@ function enableSpotPlacement() {
       let photoURL = null;
 
       if (file) {
-        const storageRef = storage.ref().child(`spotImages/${Date.now()}_${file.name}`);
-        await storageRef.put(file);
-        photoURL = await storageRef.getDownloadURL();
-      }
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result.split(',')[1];
 
-      db.collection("spots").add({
-        user: currentUser,
-        location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
-        description: desc,
-        rating: stars,
-        createdAt: timestamp,
-        photo: photoURL
-      }).then(() => {
-        loadSpots();
-      });
+          try {
+            const response = await fetch("https://api.imgur.com/3/image", {
+              method: "POST",
+              headers: {
+                Authorization: `Client-ID ${IMGUR_CLIENT_ID}`,
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({ image: base64 })
+            });
+
+            const data = await response.json();
+            photoURL = data.data.link;
+            saveSpot(e, desc, stars, timestamp, photoURL);
+          } catch (err) {
+            alert("Fehler beim Hochladen des Bildes.");
+            saveSpot(e, desc, stars, timestamp, null);
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        saveSpot(e, desc, stars, timestamp, null);
+      }
     };
   });
 }
-
 function loadSpots() {
   db.collection("spots").get().then(snapshot => {
     map.eachLayer(layer => {
@@ -312,3 +323,25 @@ function deleteAccount() {
     });
   });
 }
+
+
+
+
+
+
+
+function saveSpot(e, desc, stars, timestamp, photoURL) {
+  db.collection("spots").add({
+    user: currentUser,
+    location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
+    description: desc,
+    rating: stars,
+    createdAt: timestamp,
+    photo: photoURL
+  }).then(() => {
+    loadSpots();
+  });
+}
+
+
+
