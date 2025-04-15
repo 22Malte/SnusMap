@@ -93,11 +93,12 @@ li {
 #addSpotBtn {
   position: fixed;
   bottom: 90px;
-  right: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   background-color: #00e676;
   color: black;
-  padding: 16px 20px;
-  font-size: 20px;
+  padding: 16px 30px;
+  font-size: 24px;
   border-radius: 50px;
   border: none;
   font-weight: bold;
