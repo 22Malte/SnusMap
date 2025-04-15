@@ -135,7 +135,7 @@ function startMap() {
   navigator.geolocation.getCurrentPosition(pos => {
     userLocation = [pos.coords.latitude, pos.coords.longitude];
     map.setView(userLocation, 13);
-    userCircle = L.circle(userLocation, { radius: 40000, color: "lime", fillOpacity: 0.2 }).addTo(map);
+    userCircle = L.circle(userLocation, { radius: 4000, color: "lime", fillOpacity: 0.2 }).addTo(map);
   }, () => {
     alert("Standort konnte nicht abgerufen werden.");
     userLocation = [51.1657, 10.4515];
@@ -153,7 +153,7 @@ function enableSpotPlacement() {
     canPlaceSpot = false;
 
     const distance = map.distance(userLocation, [e.latlng.lat, e.latlng.lng]);
-    if (distance > 40000) return alert("Dieser Punkt liegt außerhalb des 40 km Radius.");
+    if (distance > 4000) return alert("Dieser Punkt liegt außerhalb des 4 km Radius.");
 
     const desc = prompt("Was ging da ab?");
     if (!desc || desc.trim() === "") return alert("Beschreibung ist erforderlich.");
