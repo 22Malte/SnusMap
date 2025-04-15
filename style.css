@@ -182,7 +182,6 @@ li {
 }
 
 
-/* === Spot-Erstellen-Popup === */
 #spotPopup {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -204,10 +203,16 @@ li {
   font-weight: bold;
 }
 
+#spotPopupContent h2 {
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
 #spotPopupContent label {
   display: block;
-  margin-top: 10px;
-  font-size: 16px;
+  margin-top: 14px;
+  font-size: 15px;
+  text-align: left;
 }
 
 #ratingStars span {
