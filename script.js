@@ -5,8 +5,7 @@ const firebaseConfig = {
   projectId: "snusmap-6245b",
   storageBucket: "snusmap-6245b.appspot.com",
   messagingSenderId: "485549625203",
-  appId: "1:485549625203:web:efa5bde3074a76ad24bf06",
-  measurementId: "G-88KNW2SKGR"
+  appId: "1:485549625203:web:efa5bde3074a76ad24bf06"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -17,9 +16,7 @@ function isiOS() {
   return /iPad|iPhone|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
 }
 function applyEmojiMode() {
-  if (!isiOS()) {
-    document.body.classList.add("android-emoji");
-  }
+  if (!isiOS()) document.body.classList.add("android-emoji");
 }
 applyEmojiMode();
 
@@ -52,7 +49,7 @@ function generateRecoveryPhrase() {
   return phrase.join("-");
 }
 
-// === Auth UI Handling ===
+// === Auth ===
 function showRegister() {
   document.getElementById("login-form").style.display = "none";
   document.getElementById("register-form").style.display = "block";
@@ -63,57 +60,47 @@ function showLogin() {
   document.getElementById("register-form").style.display = "none";
   setStatus("");
 }
-function setStatus(message, success = false) {
-  const status = document.getElementById("auth-status");
-  status.innerText = message;
-  status.style.color = success ? "lightgreen" : "red";
+function setStatus(msg, success = false) {
+  const s = document.getElementById("auth-status");
+  s.innerText = msg;
+  s.style.color = success ? "lightgreen" : "red";
 }
-
-// === Registrierung ===
 function register() {
-  const username = document.getElementById("reg-username").value.trim().toLowerCase();
-  const anzeige = document.getElementById("reg-anzeige").value.trim();
-  const pw = document.getElementById("reg-password").value;
-  const pwConfirm = document.getElementById("reg-password-confirm").value;
-
-  if (!username || !anzeige || pw !== pwConfirm) return setStatus("Fehlerhafte Eingabe.");
+  const u = document.getElementById("reg-username").value.trim().toLowerCase();
+  const a = document.getElementById("reg-anzeige").value.trim();
+  const p = document.getElementById("reg-password").value;
+  const c = document.getElementById("reg-password-confirm").value;
+  if (!u || !a || p !== c) return setStatus("Fehlerhafte Eingabe.");
 
   const recovery = generateRecoveryPhrase();
-  db.collection("users").doc(username).get().then(doc => {
+  db.collection("users").doc(u).get().then(doc => {
     if (doc.exists) return setStatus("Username ist bereits vergeben.");
-    db.collection("users").doc(username).set({
-      anzeigeName: anzeige,
-      passwort: pw,
+    db.collection("users").doc(u).set({
+      anzeigeName: a,
+      passwort: p,
       recoveryPhrase: recovery,
       bio: "",
       profilBild: ""
     }).then(() => {
-      currentUser = username;
-      localStorage.setItem("snus_user", username);
+      currentUser = u;
+      localStorage.setItem("snus_user", u);
       document.getElementById("recovery-display").innerText = "Recovery Phrase: " + recovery;
       setStatus("Registrierung erfolgreich!", true);
       startMap();
-    }).catch(() => setStatus("Fehler beim Speichern."));
+    });
   });
 }
-
-// === Login ===
 function login() {
-  const username = document.getElementById("login-username").value.trim().toLowerCase();
-  const pw = document.getElementById("login-password").value;
-
-  db.collection("users").doc(username).get().then(doc => {
-    if (!doc.exists || doc.data().passwort !== pw) {
-      return setStatus("Login fehlgeschlagen.");
-    }
-    currentUser = username;
-    localStorage.setItem("snus_user", username);
+  const u = document.getElementById("login-username").value.trim().toLowerCase();
+  const p = document.getElementById("login-password").value;
+  db.collection("users").doc(u).get().then(doc => {
+    if (!doc.exists || doc.data().passwort !== p) return setStatus("Login fehlgeschlagen.");
+    currentUser = u;
+    localStorage.setItem("snus_user", u);
     setStatus("Login erfolgreich!", true);
     startMap();
-  }).catch(() => setStatus("Verbindung fehlgeschlagen."));
+  });
 }
-
-// === Logout ===
 function logout() {
   if (!confirm("Willst du dich wirklich ausloggen?")) return;
   localStorage.removeItem("snus_user");
@@ -128,16 +115,13 @@ function startMap() {
   switchTab("tab-map");
 
   map = L.map('map').setView([51.1657, 10.4515], 6);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: ''
-  }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '' }).addTo(map);
 
   navigator.geolocation.getCurrentPosition(pos => {
     userLocation = [pos.coords.latitude, pos.coords.longitude];
     map.setView(userLocation, 13);
     userCircle = L.circle(userLocation, { radius: 4000, color: "lime", fillOpacity: 0.2 }).addTo(map);
   }, () => {
-    alert("Standort konnte nicht abgerufen werden.");
     userLocation = [51.1657, 10.4515];
     map.setView(userLocation, 6);
   });
@@ -146,64 +130,95 @@ function startMap() {
   loadProfile();
 }
 
+// === SPOT ERSTELLEN (NEUES POPUP UI) ===
+let pendingSpotCoords = null;
+let selectedRating = 0;
+let selectedImageFile = null;
+
 function enableSpotPlacement() {
   canPlaceSpot = true;
-  map.once("click", async (e) => {
+  map.once("click", (e) => {
     if (!canPlaceSpot) return;
     canPlaceSpot = false;
 
     const distance = map.distance(userLocation, [e.latlng.lat, e.latlng.lng]);
     if (distance > 4000) return alert("Dieser Punkt liegt außerhalb des 4 km Radius.");
 
-    const desc = prompt("Was ging da ab?");
-    if (!desc || desc.trim() === "") return alert("Beschreibung ist erforderlich.");
-
-    const rating = prompt("Wie viele Sterne gibst du diesem Ort? (1-5)");
-    const stars = Math.min(5, Math.max(1, parseInt(rating) || 0));
-    const timestamp = new Date().toISOString();
-
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = "image/*";
-    fileInput.click();
-
-    fileInput.onchange = async () => {
-      const file = fileInput.files[0];
-      let photoURL = null;
-
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64 = reader.result.split(',')[1];
-          try {
-            const res = await fetch("https://api.imgur.com/3/image", {
-              method: "POST",
-              headers: {
-                Authorization: `Client-ID ${IMGUR_CLIENT_ID}`,
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({ image: base64 })
-            });
-            const data = await res.json();
-            photoURL = data.data.link;
-            saveSpot(e, desc, stars, timestamp, photoURL);
-          } catch (err) {
-            alert("Fehler beim Hochladen des Bildes.");
-            saveSpot(e, desc, stars, timestamp, null);
-          }
-        };
-        reader.readAsDataURL(file);
-      } else {
-        saveSpot(e, desc, stars, timestamp, null);
-      }
-    };
+    pendingSpotCoords = e.latlng;
+    selectedRating = 0;
+    selectedImageFile = null;
+    document.getElementById("spotDesc").value = "";
+    updateStarDisplay();
+    document.getElementById("spotPhotoBox").innerText = "+";
+    document.getElementById("spotPopup").style.display = "flex";
   });
 }
 
-function saveSpot(e, desc, stars, timestamp, photoURL) {
+function setRating(stars) {
+  selectedRating = stars;
+  updateStarDisplay();
+}
+
+function updateStarDisplay() {
+  const stars = document.querySelectorAll("#ratingStars span");
+  stars.forEach((star, index) => {
+    star.innerText = index < selectedRating ? "★" : "☆";
+  });
+}
+
+document.getElementById("spotPhotoInput").addEventListener("change", (e) => {
+  selectedImageFile = e.target.files[0];
+  document.getElementById("spotPhotoBox").innerText = selectedImageFile ? "✓" : "+";
+});
+
+
+
+
+
+
+
+
+
+function confirmSpot() {
+  const desc = document.getElementById("spotDesc").value.trim();
+  const timestamp = new Date().toISOString();
+  const stars = selectedRating || 1;
+
+  if (!pendingSpotCoords) return;
+  if (!desc) return alert("Beschreibung fehlt.");
+
+  if (selectedImageFile) {
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64 = reader.result.split(',')[1];
+      try {
+        const res = await fetch("https://api.imgur.com/3/image", {
+          method: "POST",
+          headers: {
+            Authorization: `Client-ID ${IMGUR_CLIENT_ID}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ image: base64 })
+        });
+        const data = await res.json();
+        saveSpot(pendingSpotCoords, desc, stars, timestamp, data.data.link);
+      } catch {
+        alert("Bild-Upload fehlgeschlagen.");
+        saveSpot(pendingSpotCoords, desc, stars, timestamp, null);
+      }
+    };
+    reader.readAsDataURL(selectedImageFile);
+  } else {
+    saveSpot(pendingSpotCoords, desc, stars, timestamp, null);
+  }
+
+  document.getElementById("spotPopup").style.display = "none";
+}
+
+function saveSpot(coords, desc, stars, timestamp, photoURL) {
   db.collection("spots").add({
     user: currentUser,
-    location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
+    location: new firebase.firestore.GeoPoint(coords.lat, coords.lng),
     description: desc,
     rating: stars,
     createdAt: timestamp,
