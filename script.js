@@ -11,6 +11,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const storage = firebase.storage();
 
 // === Emoji Auto-Wechsel ===
 function isiOS() {
@@ -155,7 +156,7 @@ function startMap() {
 
 function enableSpotPlacement() {
   canPlaceSpot = true;
-  map.once("click", e => {
+  map.once("click", async (e) => {
     if (!canPlaceSpot) return;
     canPlaceSpot = false;
 
@@ -175,15 +176,32 @@ function enableSpotPlacement() {
     const stars = Math.min(5, Math.max(1, parseInt(rating) || 0));
     const timestamp = new Date().toISOString();
 
-    db.collection("spots").add({
-      user: currentUser,
-      location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
-      description: desc,
-      rating: stars,
-      createdAt: timestamp
-    }).then(() => {
-      loadSpots();
-    });
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.click();
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files[0];
+      let photoURL = null;
+
+      if (file) {
+        const storageRef = storage.ref().child(`spotImages/${Date.now()}_${file.name}`);
+        await storageRef.put(file);
+        photoURL = await storageRef.getDownloadURL();
+      }
+
+      db.collection("spots").add({
+        user: currentUser,
+        location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
+        description: desc,
+        rating: stars,
+        createdAt: timestamp,
+        photo: photoURL
+      }).then(() => {
+        loadSpots();
+      });
+    };
   });
 }
 
@@ -196,12 +214,16 @@ function loadSpots() {
     snapshot.forEach(doc => {
       const spot = doc.data();
       const latlng = [spot.location.latitude, spot.location.longitude];
+
       db.collection("users").doc(spot.user).get().then(userDoc => {
         const name = userDoc.exists ? userDoc.data().anzeigeName : "Unbekannt";
+        const img = spot.photo ? `<img src="${spot.photo}" onclick="showImage('${spot.photo}')" style="width:100%;margin-top:8px;border-radius:6px;" />` : "";
+
         const popupContent = `
           <strong>${name}</strong><br>
           ${"⭐".repeat(spot.rating || 1)}<br>
           ${spot.description}<br>
+          ${img}
           <small>${spot.createdAt}</small><br>
           ${spot.user === currentUser ? `<button onclick="deleteSpot('${doc.id}')">Löschen</button>` : ""}
         `;
@@ -209,6 +231,13 @@ function loadSpots() {
       });
     });
   });
+}
+
+function showImage(url) {
+  const overlay = document.getElementById("imageOverlay");
+  const img = document.getElementById("fullscreenImage");
+  img.src = url;
+  overlay.style.display = "flex";
 }
 
 function deleteSpot(id) {
