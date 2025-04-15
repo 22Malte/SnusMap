@@ -136,6 +136,20 @@ li {
 }
 
 
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 20px auto;
+  max-width: 300px;
+}
+
+li {
+  padding: 12px;
+  font-size: 16px;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+}
+
 /* Optional: Emoji-Styling für Android */
 .android-emoji button,
 .android-emoji .bottom-nav button,
