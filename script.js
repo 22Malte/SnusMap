@@ -20,9 +20,13 @@ function applyEmojiMode() {
 }
 applyEmojiMode();
 
+// === Globals ===
 let currentUser = null;
 let map, userCircle, userLocation = null;
 let canPlaceSpot = false;
+let pendingSpotCoords = null;
+let selectedRating = 0;
+let selectedImageFile = null;
 
 // === Tabs ===
 function switchTab(tabId) {
@@ -42,11 +46,7 @@ window.onload = () => {
 // === Recovery Phrase Generator ===
 function generateRecoveryPhrase() {
   const words = ["shadow", "lemon", "river", "jungle", "echo", "sugar", "storm", "pine"];
-  let phrase = [];
-  for (let i = 0; i < 6; i++) {
-    phrase.push(words[Math.floor(Math.random() * words.length)]);
-  }
-  return phrase.join("-");
+  return Array.from({ length: 6 }, () => words[Math.floor(Math.random() * words.length)]).join("-");
 }
 
 // === Auth ===
@@ -71,7 +71,6 @@ function register() {
   const p = document.getElementById("reg-password").value;
   const c = document.getElementById("reg-password-confirm").value;
   if (!u || !a || p !== c) return setStatus("Fehlerhafte Eingabe.");
-
   const recovery = generateRecoveryPhrase();
   db.collection("users").doc(u).get().then(doc => {
     if (doc.exists) return setStatus("Username ist bereits vergeben.");
@@ -130,15 +129,10 @@ function startMap() {
   loadProfile();
 }
 
-// === SPOT ERSTELLEN (NEUES POPUP UI) ===
-let pendingSpotCoords = null;
-let selectedRating = 0;
-let selectedImageFile = null;
-
+// === Spot setzen ===
 function enableSpotPlacement() {
   alert("Tippe auf die Karte, um deinen Spot zu platzieren.");
   canPlaceSpot = true;
-
   map.once("click", (e) => {
     if (!canPlaceSpot) return;
     canPlaceSpot = false;
@@ -146,7 +140,6 @@ function enableSpotPlacement() {
     const distance = map.distance(userLocation, [e.latlng.lat, e.latlng.lng]);
     if (distance > 4000) return alert("Dieser Punkt liegt außerhalb des 4 km Radius.");
 
-    // Temporäre rote Pin-Nadel
     L.marker(e.latlng, { icon: L.icon({
       iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
       iconSize: [32, 32],
@@ -157,8 +150,8 @@ function enableSpotPlacement() {
     selectedRating = 0;
     selectedImageFile = null;
     document.getElementById("spotDesc").value = "";
-    updateStarDisplay();
     document.getElementById("spotPhotoBox").innerText = "+";
+    updateStarDisplay();
 
     const popup = document.getElementById("spotPopup");
     popup.style.display = "flex";
@@ -166,48 +159,39 @@ function enableSpotPlacement() {
   });
 }
 
-function setRating(stars) {
-  selectedRating = stars;
+function setRating(r) {
+  selectedRating = r;
   updateStarDisplay();
 }
-
 function updateStarDisplay() {
   const stars = document.querySelectorAll("#ratingStars span");
-  stars.forEach((star, index) => {
-    star.innerText = index < selectedRating ? "★" : "☆";
-    star.classList.toggle("active", index < selectedRating);
+  stars.forEach((s, i) => {
+    s.innerText = i < selectedRating ? "★" : "☆";
+    s.classList.toggle("active", i < selectedRating);
   });
 }
 
-// === File Input Binding ===
-window.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
   const input = document.getElementById("spotPhotoInput");
-  input.addEventListener("change", (e) => {
-    selectedImageFile = e.target.files[0];
-    document.getElementById("spotPhotoBox").innerText = selectedImageFile ? "✓" : "+";
-  });
+  if (input) {
+    input.addEventListener("change", (e) => {
+      selectedImageFile = e.target.files[0];
+      document.getElementById("spotPhotoBox").innerText = selectedImageFile ? "✓" : "+";
+    });
+  }
 });
-
-
-
-
-
-
-
-
 
 function confirmSpot() {
   const desc = document.getElementById("spotDesc").value.trim();
   const timestamp = new Date().toISOString();
   const stars = selectedRating || 1;
-
-  if (!pendingSpotCoords) return;
+  if (!pendingSpotCoords) return alert("Kein Standort gewählt.");
   if (!desc) return alert("Beschreibung fehlt.");
 
   if (selectedImageFile) {
     const reader = new FileReader();
     reader.onloadend = async () => {
-      const base64 = reader.result.split(',')[1];
+      const base64 = reader.result.split(",")[1];
       try {
         const res = await fetch("https://api.imgur.com/3/image", {
           method: "POST",
@@ -218,9 +202,14 @@ function confirmSpot() {
           body: JSON.stringify({ image: base64 })
         });
         const data = await res.json();
-        saveSpot(pendingSpotCoords, desc, stars, timestamp, data.data.link);
+        if (data.success && data.data.link) {
+          saveSpot(pendingSpotCoords, desc, stars, timestamp, data.data.link);
+        } else {
+          alert("Bild konnte nicht hochgeladen werden.");
+          saveSpot(pendingSpotCoords, desc, stars, timestamp, null);
+        }
       } catch {
-        alert("Bild-Upload fehlgeschlagen.");
+        alert("Fehler beim Hochladen.");
         saveSpot(pendingSpotCoords, desc, stars, timestamp, null);
       }
     };
@@ -229,7 +218,10 @@ function confirmSpot() {
     saveSpot(pendingSpotCoords, desc, stars, timestamp, null);
   }
 
-  document.getElementById("spotPopup").style.display = "none";
+  document.getElementById("spotPopup").classList.remove("visible");
+  setTimeout(() => {
+    document.getElementById("spotPopup").style.display = "none";
+  }, 300);
 }
 
 function saveSpot(coords, desc, stars, timestamp, photoURL) {
@@ -239,7 +231,7 @@ function saveSpot(coords, desc, stars, timestamp, photoURL) {
     description: desc,
     rating: stars,
     createdAt: timestamp,
-    photo: photoURL
+    photo: photoURL || null
   }).then(() => loadSpots());
 }
 
@@ -280,7 +272,6 @@ function deleteSpot(id) {
   db.collection("spots").doc(id).delete().then(() => loadSpots());
 }
 
-// === Profilfunktionen ===
 function loadProfile() {
   db.collection("users").doc(currentUser).get().then(doc => {
     if (!doc.exists) return;
