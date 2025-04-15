@@ -1,29 +1,26 @@
 // === Firebase Setup ===
-
 const firebaseConfig = {
   apiKey: "AIzaSyB66bXzJd-41gp87YMVmO7zSZabmwQVVFM",
   authDomain: "snusmap-6245b.firebaseapp.com",
   projectId: "snusmap-6245b",
-  storageBucket: "snusmap-6245b.firebasestorage.app",
+  storageBucket: "snusmap-6245b.appspot.com",
   messagingSenderId: "485549625203",
   appId: "1:485549625203:web:efa5bde3074a76ad24bf06",
   measurementId: "G-88KNW2SKGR"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const IMGUR_CLIENT_ID = "c590f6e5dc85f51"
+const IMGUR_CLIENT_ID = "c590f6e5dc85f51";
 
 // === Emoji Auto-Wechsel ===
 function isiOS() {
   return /iPad|iPhone|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
 }
-
 function applyEmojiMode() {
   if (!isiOS()) {
     document.body.classList.add("android-emoji");
   }
 }
-
 applyEmojiMode();
 
 let currentUser = null;
@@ -61,13 +58,11 @@ function showRegister() {
   document.getElementById("register-form").style.display = "block";
   setStatus("");
 }
-
 function showLogin() {
   document.getElementById("login-form").style.display = "block";
   document.getElementById("register-form").style.display = "none";
   setStatus("");
 }
-
 function setStatus(message, success = false) {
   const status = document.getElementById("auth-status");
   status.innerText = message;
@@ -81,14 +76,11 @@ function register() {
   const pw = document.getElementById("reg-password").value;
   const pwConfirm = document.getElementById("reg-password-confirm").value;
 
-  if (!username || !anzeige || pw !== pwConfirm) {
-    return setStatus("Fehlerhafte Eingabe.");
-  }
+  if (!username || !anzeige || pw !== pwConfirm) return setStatus("Fehlerhafte Eingabe.");
 
   const recovery = generateRecoveryPhrase();
   db.collection("users").doc(username).get().then(doc => {
     if (doc.exists) return setStatus("Username ist bereits vergeben.");
-
     db.collection("users").doc(username).set({
       anzeigeName: anzeige,
       passwort: pw,
@@ -137,7 +129,7 @@ function startMap() {
 
   map = L.map('map').setView([51.1657, 10.4515], 6);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+    attribution: ''
   }).addTo(map);
 
   navigator.geolocation.getCurrentPosition(pos => {
@@ -161,22 +153,15 @@ function enableSpotPlacement() {
     canPlaceSpot = false;
 
     const distance = map.distance(userLocation, [e.latlng.lat, e.latlng.lng]);
-    if (distance > 40000) {
-      alert("Dieser Punkt liegt außerhalb des 40 km Radius.");
-      return;
-    }
+    if (distance > 40000) return alert("Dieser Punkt liegt außerhalb des 40 km Radius.");
 
     const desc = prompt("Was ging da ab?");
-    if (!desc || desc.trim() === "") {
-      alert("Beschreibung ist erforderlich.");
-      return;
-    }
+    if (!desc || desc.trim() === "") return alert("Beschreibung ist erforderlich.");
 
     const rating = prompt("Wie viele Sterne gibst du diesem Ort? (1-5)");
     const stars = Math.min(5, Math.max(1, parseInt(rating) || 0));
     const timestamp = new Date().toISOString();
 
-    // Bildauswahl via Input
     const fileInput = document.createElement("input");
     fileInput.type = "file";
     fileInput.accept = "image/*";
@@ -190,9 +175,8 @@ function enableSpotPlacement() {
         const reader = new FileReader();
         reader.onloadend = async () => {
           const base64 = reader.result.split(',')[1];
-
           try {
-            const response = await fetch("https://api.imgur.com/3/image", {
+            const res = await fetch("https://api.imgur.com/3/image", {
               method: "POST",
               headers: {
                 Authorization: `Client-ID ${IMGUR_CLIENT_ID}`,
@@ -200,8 +184,7 @@ function enableSpotPlacement() {
               },
               body: JSON.stringify({ image: base64 })
             });
-
-            const data = await response.json();
+            const data = await res.json();
             photoURL = data.data.link;
             saveSpot(e, desc, stars, timestamp, photoURL);
           } catch (err) {
@@ -216,21 +199,30 @@ function enableSpotPlacement() {
     };
   });
 }
+
+function saveSpot(e, desc, stars, timestamp, photoURL) {
+  db.collection("spots").add({
+    user: currentUser,
+    location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
+    description: desc,
+    rating: stars,
+    createdAt: timestamp,
+    photo: photoURL
+  }).then(() => loadSpots());
+}
+
 function loadSpots() {
   db.collection("spots").get().then(snapshot => {
     map.eachLayer(layer => {
       if (layer instanceof L.Marker) map.removeLayer(layer);
     });
-
     snapshot.forEach(doc => {
       const spot = doc.data();
       const latlng = [spot.location.latitude, spot.location.longitude];
-
       db.collection("users").doc(spot.user).get().then(userDoc => {
         const name = userDoc.exists ? userDoc.data().anzeigeName : "Unbekannt";
         const img = spot.photo ? `<img src="${spot.photo}" onclick="showImage('${spot.photo}')" style="width:100%;margin-top:8px;border-radius:6px;" />` : "";
-
-        const popupContent = `
+        const popup = `
           <strong>${name}</strong><br>
           ${"⭐".repeat(spot.rating || 1)}<br>
           ${spot.description}<br>
@@ -238,7 +230,7 @@ function loadSpots() {
           <small>${spot.createdAt}</small><br>
           ${spot.user === currentUser ? `<button onclick="deleteSpot('${doc.id}')">Löschen</button>` : ""}
         `;
-        L.marker(latlng).addTo(map).bindPopup(popupContent);
+        L.marker(latlng).addTo(map).bindPopup(popup);
       });
     });
   });
@@ -253,12 +245,10 @@ function showImage(url) {
 
 function deleteSpot(id) {
   if (!confirm("Diesen Spot wirklich löschen?")) return;
-  db.collection("spots").doc(id).delete().then(() => {
-    loadSpots();
-  });
+  db.collection("spots").doc(id).delete().then(() => loadSpots());
 }
 
-// === Profil-Info laden ===
+// === Profilfunktionen ===
 function loadProfile() {
   db.collection("users").doc(currentUser).get().then(doc => {
     if (!doc.exists) return;
@@ -268,80 +258,3 @@ function loadProfile() {
     document.getElementById("profil-username").innerText = "@" + currentUser;
   });
 }
-
-function editDisplayName() {
-  const neuerName = prompt("Neuer Displayname:");
-  if (!neuerName) return;
-  db.collection("users").doc(currentUser).update({
-    anzeigeName: neuerName
-  }).then(() => {
-    loadProfile();
-    alert("Name aktualisiert.");
-  });
-}
-
-function editProfilBild() {
-  const emoji = prompt("Gib ein Emoji für dein Profilbild ein:");
-  if (!emoji) return;
-  db.collection("users").doc(currentUser).update({
-    profilBild: emoji
-  }).then(() => {
-    loadProfile();
-    alert("Profilbild aktualisiert.");
-  });
-}
-
-function resetPasswort() {
-  const neuesPW = prompt("Neues Passwort:");
-  if (!neuesPW) return;
-  db.collection("users").doc(currentUser).update({
-    passwort: neuesPW
-  }).then(() => alert("Passwort geändert."));
-}
-
-function resetRecovery() {
-  const neuePhrase = generateRecoveryPhrase();
-  db.collection("users").doc(currentUser).update({
-    recoveryPhrase: neuePhrase
-  }).then(() => alert("Neue Recovery Phrase:\n" + neuePhrase));
-}
-
-function deleteAccount() {
-  if (!confirm("Willst du wirklich deinen Account löschen?")) return;
-
-  // 1. Nutzer löschen
-  db.collection("users").doc(currentUser).delete().then(() => {
-    // 2. Spots löschen
-    db.collection("spots").where("user", "==", currentUser).get().then(snapshot => {
-      const batch = db.batch();
-      snapshot.forEach(doc => batch.delete(doc.ref));
-      batch.commit().then(() => {
-        localStorage.removeItem("snus_user");
-        alert("Account + Spots gelöscht.");
-        location.reload();
-      });
-    });
-  });
-}
-
-
-
-
-
-
-
-function saveSpot(e, desc, stars, timestamp, photoURL) {
-  db.collection("spots").add({
-    user: currentUser,
-    location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
-    description: desc,
-    rating: stars,
-    createdAt: timestamp,
-    photo: photoURL
-  }).then(() => {
-    loadSpots();
-  });
-}
-
-
-
