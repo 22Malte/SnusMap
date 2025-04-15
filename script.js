@@ -18,7 +18,15 @@ let currentUser = null;
 let map, userCircle, userLocation = null;
 let canPlaceSpot = false;
 
-// === Recovery Phrase Generator ===
+// === Session Restore ===
+window.onload = () => {
+  const savedUser = localStorage.getItem("snus_user");
+  if (savedUser) {
+    currentUser = savedUser;
+    startMap();
+  }
+};
+
 function generateRecoveryPhrase() {
   const words = ["shadow", "lemon", "river", "jungle", "echo", "sugar", "storm", "pine"];
   let phrase = [];
@@ -28,7 +36,6 @@ function generateRecoveryPhrase() {
   return phrase.join("-");
 }
 
-// === UI Switcher & Feedback ===
 function showRegister() {
   document.getElementById("login-form").style.display = "none";
   document.getElementById("register-form").style.display = "block";
@@ -47,7 +54,6 @@ function setStatus(message, success = false) {
   status.style.color = success ? "lightgreen" : "red";
 }
 
-// === Registrierung ===
 function register() {
   const username = document.getElementById("reg-username").value.trim().toLowerCase();
   const anzeige = document.getElementById("reg-anzeige").value.trim();
@@ -70,14 +76,14 @@ function register() {
       profilBild: ""
     }).then(() => {
       currentUser = username;
+      localStorage.setItem("snus_user", username);
       document.getElementById("recovery-display").innerText = "Recovery Phrase: " + recovery;
       setStatus("Registrierung erfolgreich!", true);
       startMap();
-    }).catch(err => setStatus("Fehler beim Speichern."));
+    }).catch(() => setStatus("Fehler beim Speichern."));
   });
 }
 
-// === Login ===
 function login() {
   const username = document.getElementById("login-username").value.trim().toLowerCase();
   const pw = document.getElementById("login-password").value;
@@ -87,12 +93,12 @@ function login() {
       return setStatus("Login fehlgeschlagen.");
     }
     currentUser = username;
+    localStorage.setItem("snus_user", username);
     setStatus("Login erfolgreich!", true);
     startMap();
   }).catch(() => setStatus("Verbindung fehlgeschlagen."));
 }
 
-// === MAP ===
 function startMap() {
   document.getElementById("auth-container").style.display = "none";
   document.getElementById("map-ui").style.display = "block";
@@ -108,7 +114,7 @@ function startMap() {
     userCircle = L.circle(userLocation, { radius: 40000, color: "lime", fillOpacity: 0.2 }).addTo(map);
   }, () => {
     alert("Standort konnte nicht abgerufen werden.");
-    userLocation = [51.1657, 10.4515]; // Deutschland-Mitte Fallback
+    userLocation = [51.1657, 10.4515];
     map.setView(userLocation, 6);
   });
 
@@ -133,12 +139,15 @@ function enableSpotPlacement() {
       return;
     }
 
+    const rating = prompt("Wie viele Sterne gibst du diesem Ort? (1-5)");
+    const stars = Math.min(5, Math.max(1, parseInt(rating) || 0));
     const timestamp = new Date().toISOString();
 
     db.collection("spots").add({
       user: currentUser,
       location: new firebase.firestore.GeoPoint(e.latlng.lat, e.latlng.lng),
       description: desc,
+      rating: stars,
       createdAt: timestamp
     }).then(() => {
       loadSpots();
@@ -148,14 +157,33 @@ function enableSpotPlacement() {
 
 function loadSpots() {
   db.collection("spots").get().then(snapshot => {
+    map.eachLayer(layer => {
+      if (layer instanceof L.Marker) map.removeLayer(layer);
+    });
+
     snapshot.forEach(doc => {
       const spot = doc.data();
       const latlng = [spot.location.latitude, spot.location.longitude];
       db.collection("users").doc(spot.user).get().then(userDoc => {
         const name = userDoc.exists ? userDoc.data().anzeigeName : "Unbekannt";
-        const popup = `<strong>${name}</strong><br>${spot.description}<br><small>${spot.createdAt}</small>`;
-        L.marker(latlng).addTo(map).bindPopup(popup);
+        const popupContent = `
+          <strong>${name}</strong><br>
+          ${"⭐".repeat(spot.rating || 1)}<br>
+          ${spot.description}<br>
+          <small>${spot.createdAt}</small><br>
+          ${spot.user === currentUser ? `<button onclick="deleteSpot('${doc.id}')">Löschen</button>` : ""}
+        `;
+        L.marker(latlng).addTo(map).bindPopup(popupContent);
       });
     });
   });
+}
+
+function deleteSpot(id) {
+  if (!confirm("Diesen Spot wirklich löschen?")) return;
+  db.collection("spots").doc(id).delete().then(() => {
+    loadSpots();
+  });
+
+       
 }
