@@ -102,5 +102,32 @@
  	 <img id="fullscreenImage" src="" alt="Spot-Foto" />
 	</div>
     
+    
+    <!-- Spot-Erstellen-Popup -->
+<div id="spotPopup" style="display: none;">
+  <div id="spotPopupContent">
+    <h2>Neuer Spot</h2>
+    
+    <label>Rating</label>
+    <div id="ratingStars">
+      <span onclick="setRating(1)">☆</span>
+      <span onclick="setRating(2)">☆</span>
+      <span onclick="setRating(3)">☆</span>
+      <span onclick="setRating(4)">☆</span>
+      <span onclick="setRating(5)">☆</span>
+    </div>
+
+    <label for="spotDesc">Was lief hier</label>
+    <textarea id="spotDesc" rows="2" placeholder="..."></textarea>
+
+    <label for="spotPhoto">Foto</label>
+    <div id="spotPhotoBox" onclick="document.getElementById('spotPhotoInput').click()">+</div>
+    <input type="file" id="spotPhotoInput" accept="image/*" style="display: none;" />
+
+    <button id="confirmSpotBtn" onclick="confirmSpot()">+</button>
+  </div>
+</div>
+    
+    
 </body>
 </html>
