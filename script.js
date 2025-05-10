@@ -368,7 +368,7 @@ function submitReport() {
     return;
   }
 
-  fetch('https://DEIN_SERVER_URL/report', {  // später richtige ServerURL
+  fetch('http://147.189.171.45:5000/report', {  // später richtige ServerURL
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
