@@ -52,8 +52,8 @@
     <div class="tab" id="tab-settings" style="display: none;">
       <h2>⚙️ Einstellungen</h2>
       <ul>
-        <li>🌙 Darkmode ✅ (soon)</li>
-        <li>🔄 Map neu laden</li>
+        <li>🌙 Darkmode ✅ (soon)</li>  
+        <li onclick="reloadmap()">🔄 Map neu laden</li>
         <li>💬 <a href="https://discord.gg/" target="_blank">Discord</a></li>
         <li style="color:red;" onclick="logout()">🚪 Logout</li>
         <p style="text-align:center; font-size: 12px; opacity: 0.4;">© Map by <a href="https://openstreetmap.org" target="_blank">OpenStreetMap</a></p>
@@ -77,6 +77,7 @@
     <li onclick="editProfilBild()">🖼 Profilbild ändern</li>
     <li onclick="resetPasswort()">🔒 Passwort zurücksetzen</li>
     <li onclick="resetRecovery()">🧠 Recovery Phrase neu</li>
+    <li onclick="showRecoveryPhrase()">🧠 Recovery Phrase anzeigen</li>
     <li onclick="logout()">🚪 Log Out</li>
     <li style="color:red;" onclick="deleteAccount()">🗑 Account löschen</li>
   </ul>
