@@ -107,10 +107,64 @@ function logout() {
   location.reload();
 }
 
-function editProfilBild() {
-alert("Hier wird in zukunft noch etwas kommen");
-  
+function editDisplayName() {
+  const neuerName = prompt("Neuer Displayname:");
+  if (!neuerName) return;
+  db.collection("users").doc(currentUser).update({
+    anzeigeName: neuerName
+  }).then(() => {
+    loadProfile();
+    alert("Displayname aktualisiert!");
+  });
 }
+
+function editProfilBild() {
+  const emoji = prompt("Neues Profil-Emoji eingeben (z.B. 😎):");
+  if (!emoji) return;
+  db.collection("users").doc(currentUser).update({
+    profilBild: emoji
+  }).then(() => {
+    loadProfile();
+    alert("Profilbild aktualisiert!");
+  });
+}
+
+function resetPasswort() {
+  const neuesPW = prompt("Neues Passwort:");
+  if (!neuesPW) return;
+  db.collection("users").doc(currentUser).update({
+    passwort: neuesPW
+  }).then(() => {
+    alert("Passwort erfolgreich geändert!");
+  });
+}
+
+function resetRecovery() {
+  const neuePhrase = generateRecoveryPhrase();
+  db.collection("users").doc(currentUser).update({
+    recoveryPhrase: neuePhrase
+  }).then(() => {
+    alert("Neue Recovery Phrase:\n" + neuePhrase);
+  });
+}
+
+function deleteAccount() {
+  if (!confirm("Willst du wirklich deinen Account löschen? Dies kann nicht rückgängig gemacht werden!")) return;
+  // 1. Nutzerprofil löschen
+  db.collection("users").doc(currentUser).delete().then(() => {
+    // 2. Alle Spots des Users löschen
+    db.collection("spots").where("user", "==", currentUser).get().then(snapshot => {
+      const batch = db.batch();
+      snapshot.forEach(doc => batch.delete(doc.ref));
+      batch.commit().then(() => {
+        localStorage.removeItem("snus_user");
+        alert("Account und Spots gelöscht.");
+        location.reload();
+      });
+    });
+  });
+}
+
   
 
 // === MAP ===
