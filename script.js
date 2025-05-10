@@ -107,6 +107,12 @@ function logout() {
   location.reload();
 }
 
+function editProfilBild() {
+alert("Hier wird in zukunft noch etwas kommen");
+  
+}
+  
+
 // === MAP ===
 function startMap() {
   document.getElementById("auth-container").style.display = "none";
