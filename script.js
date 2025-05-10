@@ -368,7 +368,7 @@ function submitReport() {
     return;
   }
 
-fetch('https://1e9e-147-189-171-45.ngrok-free.app/report'', {
+fetch('https://1e9e-147-189-171-45.ngrok-free.app/report', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'
