@@ -281,3 +281,44 @@ li {
   border-radius: 50px;
   cursor: pointer;
 }
+
+
+#reportPopup {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+#reportPopupContent {
+  background: white;
+  padding: 20px;
+  border-radius: 20px;
+  width: 300px;
+  text-align: center;
+}
+
+#reportPopupContent h2 {
+  margin-bottom: 10px;
+}
+
+#reportPopupContent select {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+  border-radius: 8px;
+}
+#reportPopupContent button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  font-weight: bold;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background-color: #00e676;
+  color: black;
+}

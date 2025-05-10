@@ -165,7 +165,6 @@ function deleteAccount() {
   });
 }
 
- 
 
 
 function reloadmap() {
@@ -312,13 +311,13 @@ function loadSpots() {
         const name = userDoc.exists ? userDoc.data().anzeigeName : "Unbekannt";
         const img = spot.photo ? `<img src="${spot.photo}" onclick="showImage('${spot.photo}')" style="width:100%;margin-top:8px;border-radius:6px;" />` : "";
         const popup = `
-          <strong>${name}</strong><br>
-          ${"⭐".repeat(spot.rating || 1)}<br>
-          ${spot.description}<br>
-          ${img}
-          <small>${spot.createdAt}</small><br>
-          ${spot.user === currentUser ? `<button onclick="deleteSpot('${doc.id}')">Löschen</button>` : ""}
-        `;
+        <strong>${name}</strong><br>
+        ${"⭐".repeat(spot.rating || 1)}<br>
+        ${spot.description}<br>
+        ${img}
+        <small>${spot.createdAt}</small><br>
+        ${spot.user === currentUser ? `<button onclick="deleteSpot('${doc.id}')">Löschen</button>` : `<button style="background-color:red;color:white;padding:6px 12px;margin-top:6px;border:none;border-radius:6px;" onclick="openReport('${doc.id}', '${spot.user}')">Melden</button>`}
+      `;
         L.marker(latlng).addTo(map).bindPopup(popup);
       });
     });
@@ -344,5 +343,46 @@ function loadProfile() {
     document.getElementById("profil-icon").innerText = data.profilBild || "👤";
     document.getElementById("profil-anzeige").innerText = data.anzeigeName;
     document.getElementById("profil-username").innerText = "@" + currentUser;
+  });
+}
+
+
+let reportSpotId = null;
+let reportSpotUser = null;
+
+function openReport(spotId, spotUser) {
+  reportSpotId = spotId;
+  reportSpotUser = spotUser;
+  document.getElementById("reportPopup").style.display = "flex";
+}
+
+function closeReport() {
+  document.getElementById("reportPopup").style.display = "none";
+}
+
+function submitReport() {
+  const reason = document.getElementById("reportReason").value;
+
+  if (!reportSpotId || !reason) {
+    alert("Fehler beim Reporten.");
+    return;
+  }
+
+  fetch('https://DEIN_SERVER_URL/report', {  // später richtige ServerURL
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      spotId: reportSpotId,
+      spotUser: reportSpotUser,
+      reporter: currentUser,
+      reason: reason
+    })
+  }).then(() => {
+    alert("Report erfolgreich abgeschickt.");
+    closeReport();
+  }).catch(() => {
+    alert("Fehler beim Abschicken.");
   });
 }
