@@ -368,17 +368,17 @@ function submitReport() {
     return;
   }
 
-  fetch('http://147.189.171.45:5000/report', {  // später richtige ServerURL
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      spotId: reportSpotId,
-      spotUser: reportSpotUser,
-      reporter: currentUser,
-      reason: reason
-    })
+fetch('http://147.189.171.45:5000/report', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    spotId: reportSpotId,
+    spotUser: reportSpotUser,
+    reporter: currentUser,
+    reason: reason
+  })
   }).then(() => {
     alert("Report erfolgreich abgeschickt.");
     closeReport();
