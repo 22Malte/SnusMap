@@ -165,14 +165,7 @@ function deleteAccount() {
   });
 }
 
-function showRecoveryPhrase() {
-  db.collection("users").doc(currentUser).get().then(doc => {
-    if (!doc.exists) return alert("Fehler beim Abrufen der Recovery Phrase.");
-    const recovery = doc.data().recoveryPhrase;
-    document.getElementById("recovery-display").innerText = "Recovery Phrase: " + recovery;
-    document.getElementById("recovery-popup").style.display = "flex";
-  });
-}   
+ 
 
 
 function reloadmap() {
